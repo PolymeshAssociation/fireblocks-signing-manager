@@ -1,50 +1,52 @@
 [![js-semistandard-style](https://img.shields.io/badge/code%20style-semistandard-brightgreen.svg?style=flat-square)](https://github.com/standard/semistandard)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-# Polymesh Typescript Template Repo
+# Fireblocks signing manager
 
-This is a template repository for typescript projects. It includes some initial typescript config and tooling to make our lives easier
+Polymesh SDK compatible signing manager that interacts with [Fireblocks](https://www.fireblocks.com/) for signing.
 
-**NOTE**: This repo uses `yarn` instead of `npm` for dependencies
+## Usage
 
-Things included in the repo:
+You will need a Fireblocks Account and setup access for the API. This involves generating an API Key as well as a secret to authenticate with.
 
-- Typescript (duh)
-- Absolute imports (allows you to `import { foo } from ~/bar;` instead of `import { foo } from ../../../../bar;`. The default character is `~` but it can be changed in `tsconfig.json`)
-- Eslint to enforce code style rules (extending standard JS with enforced semicolons and typescript-eslint)
-- Prettier to format code on save
-- Semantic release for automatic versioning
-- Commitizen
-- Husky to enforce conventional commits and format the code using prettier before committing
-- Github actions for CI (runs linter, tests, build and semantic-release)
+Also, you will need to ask for Fireblocks to enable "raw signing" for your account. You should understand the risks and why raw signing is not enabled by default.
 
-## Scripts
+To use non default addresses, they must be "derived" first, before the SDK will recognize them as valid keys.
 
-- `yarn build:ts` compiles typescript files into javascript and type declarations. Outputs to `dist/` directory
-- `yarn build:docs` builds a documentation page from TSDoc comments in the code. Outputs to `docs/` directory
-- `yarn test` runs tests and outputs the coverage report
-- `yarn commit` runs the commit formatting tool (should replace normal commits)
-- `yarn semantic-release` runs semantic release to calculate version numbers based on the nature of changes since the last version (used in CI pipelines)
-- `yarn lint` runs the linter on all .ts(x) and .js(x) files and outputs all errors
-- `yarn format` runs prettier on all .ts(x) and .js(x) files and formats them according to the project standards
+Note these derived keys will need to join as a Secondary key, or have a CDD claim made for them like any other key before they are fully usable on chain.
 
-## Notes
+### Example
 
-- All tools are configured via their respective config files instead of adding the config in `package.json`. There is also some vscode project config in `.vscode/settings.json`
-  - eslint: `.eslintrc`
-  - lint-staged: `.lintstagedrc`
-  - prettier: `.prettierrc`
-  - commitlint: `commitlint.config.js`
-  - husky: `.husky`
-  - jest: `jest.config.js`
-  - semantic-release: `release.config.js`
-  - typedoc: `typedoc.json`
-  - github actions: `.github/main.yml`
-- The CI config assumes a `master` branch for stable releases and a `beta` branch for beta releases. Every time something gets pushed to either of those branches (or any time a pull request is opened to any branch), github actions will run. Semantic-release config makes it so that actual releases are only made on pushes to `master` or `beta`
-- The CI config also adds an extra couple of steps to flatten the file structure that actually gets published. This means that your published package will have the built files at the root level instead of inside a `dist` folder. Those steps are:
-  - copy `package.json` into the `dist` folder after building
-  - `cd` into the `dist` folder
-  - install deps into the `dist` folder
-  - run `semantic-release` from there
-- In order for automated NPM releases to actually work, you need to add an NPM auth token as a secret in your repo. To do that, go to your repo's `settings -> secrets -> add a new secret` input `NPM_TOKEN` as the secret name and the token you generated on your NPM account in the text area
-- If you don't need automated NPM releases, you might want to uninstall `semantic-release` and tweak the github actions yaml file to skip the release step
+```ts
+const signingManager = await FireblocksSigningManager.create({
+  url: 'https://api.fireblocks.io',
+  apiToken: 'API_TOKEN',
+  secret: 'someKey', // private key for authentication. can be read from a file with:  `readFileSync('/some/path', 'UTF8)`
+  derivationPaths: [[44, 595, 0, 0, 0]], // derive mainnet key with the "default" Fireblocks account
+});
+
+const polymesh = await Polymesh.connect({
+  signingManager,
+  ...
+})
+
+const keyInfo = await signingManager.deriveAccount([44, 595, 1, 0, 0]) // derive another key to sign with
+
+/* Create CDD or join as a secondary key using the returned keyInfo.address */
+
+sdk.assets.createAsset(assetParams, { signingAccount: keyInfo.address })
+```
+
+### Derivation Path
+
+The derivation path is a method for generating many keys out of a single secret. The Fireblocks API makes use of [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki).
+
+When using this signing manager BIP-44 conventions should be used. Essentially the first number should always be `44`, the second should be `595` for mainnet, otherwise it should be `1`. The third should correspond with the Fireblocks Account ID that should sign. The last two numbers are a way to generate sub account under a particular account. They should be 0, unless you intend to use sub accounts.
+
+If an empty array of `derivationPaths` is provided, then no keys will be derived. If `derivationPaths` is `undefined` then the default test path will be used. i.e. `[44, 1, 0, 0, 0]`
+
+Note, the `deriveAccount` method MUST be called with the appropriate path before the SDK will be able to sign for a given address, otherwise the address will not be found when attempting to sign.
+
+## Running unit tests
+
+Run `yarn test` to execute the unit tests via [Jest](https://jestjs.io).

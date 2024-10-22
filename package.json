@@ -1,7 +1,7 @@
 {
-  "name": "typescript-repo-template",
+  "name": "@polymeshassociation/fireblocks-signing-manager",
   "version": "0.0.0",
-  "description": "Template repository for typescript projects",
+  "description": "A Polymesh SDK signing manager that allows signing with keys stored in Fireblocks",
   "types": "dist/index.d.ts",
   "author": "Polymesh Association",
   "license": "ISC",
@@ -13,6 +13,11 @@
     "semantic-release": "semantic-release",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "format": "cross-env prettier-eslint $PWD\"/src/**/*.{ts,tsx,js,jsx,json,css,md}\" --write"
+  },
+  "dependencies": {
+    "@polymeshassociation/signing-manager-types": "^3.3.0",
+    "fireblocks-sdk": "^2.5.3",
+    "@polkadot/api": "^11.2.1"
   },
   "devDependencies": {
     "@commitlint/cli": "17.5.1",
@@ -57,5 +62,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PolymeshAssociation/fireblocks-signing-manager.git"
   }
 }
