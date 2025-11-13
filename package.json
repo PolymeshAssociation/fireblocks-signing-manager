@@ -15,8 +15,8 @@
     "format": "cross-env prettier-eslint $PWD\"/src/**/*.{ts,tsx,js,jsx,json,css,md}\" --write"
   },
   "dependencies": {
-    "@polkadot/api": "^11.2.1",
-    "@polymeshassociation/signing-manager-types": "^3.3.0",
+    "@polkadot/api": "16.5.2",
+    "@polymeshassociation/signing-manager-types": "^3.5.0",
     "fireblocks-sdk": "^2.5.3"
   },
   "devDependencies": {
